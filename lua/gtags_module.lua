@@ -23,27 +23,24 @@ end
 
 -- our picker function: colors
 M.run_symbols_picker = function(opts)
-    local handle = io.popen("global -P")
-    local result = handle:read("*a")
-    handle:close()
-    files = {}
-    for s in result:gmatch("[^\r\n]+") do
-        table.insert(files, split(s, "\t"))
-    end
-
     opts.bufnr = 0
-    opts.entry_maker = vim.F.if_nil(opts.entry_maker, make_entry.gen_from_ctags(opts))
 
     pickers.new(opts, {
         prompt_title = "GTAGS Symbols",
         previewer = previewers.ctags.new(opts),
-        finder = finders.new_oneshot_job(flatten{
-            "global",
-            "-L-",
-            "-f",
-            "-t",
-            files,
-        }, opts),
+        finder = finders.new_job(function(prompt)
+            if not prompt or prompt == "" then
+              return nil
+            end
+
+            local chars = {}
+            prompt:gsub(".", function(c) table.insert(chars, c) end)
+
+            local query = table.concat(chars, ".*") .. ".*"
+            -- print(vim.inspect(query))
+
+            return { "global", "-t", "-i", query, "--result=ctags"}
+        end, opts.entry_maker or make_entry.gen_from_ctags(opts), opts.max_results, opts.cwd),
         sorter = conf.generic_sorter({opts}),
         attach_mappings = function()
             action_set.select:enhance {
