@@ -1,5 +1,3 @@
--- local stdlib = require "posix.stdlib"
-
 local action_set = require "telescope.actions.set"
 local action_state = require "telescope.actions.state"
 local conf = require("telescope.config").values
@@ -13,12 +11,23 @@ local flatten = utils.flatten
 
 local M = {}
 
-function split(s, delimiter)
-    result = {};
-    for match in (s..delimiter):gmatch("(.-)"..delimiter) do
-        table.insert(result, match);
-    end
-    return result;
+local escape_chars = function(string)
+    return string.gsub(string, "[%(|%)|\\|%[|%]|%-|%{%}|%?|%+|%*|%^|%$|%.]", {
+        ["\\"] = "\\\\",
+        ["-"] = "\\-",
+        ["("] = "\\(",
+        [")"] = "\\)",
+        ["["] = "\\[",
+        ["]"] = "\\]",
+        ["{"] = "\\{",
+        ["}"] = "\\}",
+        ["?"] = "\\?",
+        ["+"] = "\\+",
+        ["*"] = "\\*",
+        ["^"] = "\\^",
+        ["$"] = "\\$",
+        ["."] = "\\.",
+    })
 end
 
 -- our picker function: colors
@@ -68,6 +77,43 @@ M.run_symbols_picker = function(opts)
             }
             return true
         end,
+        push_cursor_on_edit = true,
+        push_tagstack_on_edit = true,
+    }):find()
+end
+
+M.run_references_picker = function(opts)
+    local word
+    local visual = vim.fn.mode() == "v"
+
+    if visual == true then
+        local saved_reg = vim.fn.getreg "v"
+        vim.cmd [[noautocmd sil norm! "vy]]
+        local sele = vim.fn.getreg "v"
+        vim.fn.setreg("v", saved_reg)
+        word = vim.F.if_nil(opts.search, sele)
+    else
+        word = vim.F.if_nil(opts.search, vim.fn.expand "<cword>")
+    end
+    local search = opts.use_regex and word or escape_chars(word)
+    
+    local args = {
+        "global",
+        "-r",
+        search,
+        "--result=grep",
+    }
+    
+    -- set __inverted to use parse_without_col function in make_entry.lua
+    opts.__inverted = true
+    opts.entry_maker = opts.entry_maker or make_entry.gen_from_vimgrep(opts)
+    pickers.new(opts, {
+        prompt_title = "GTAGS References",
+        finder = finders.new_oneshot_job(args, opts),
+        previewer = conf.grep_previewer(opts),
+        sorter = conf.generic_sorter({opts}),
+        push_cursor_on_edit = true,
+        push_tagstack_on_edit = true,
     }):find()
 end
 
