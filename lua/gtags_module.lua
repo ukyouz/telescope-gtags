@@ -32,6 +32,13 @@ end
 
 -- our picker function: colors
 M.run_symbols_picker = function(opts)
+    if vim.fn.executable "global" == 0 then
+        utils.notify("gtags", {
+            msg = "You need to install gtags and create a GTAGS file to use this picker",
+            level = "ERROR",
+        })
+        return
+    end
     opts.bufnr = 0
 
     pickers.new(opts, {
@@ -39,7 +46,10 @@ M.run_symbols_picker = function(opts)
         previewer = previewers.ctags.new(opts),
         finder = finders.new_job(function(prompt)
             if not prompt or prompt == "" then
-              return nil
+                prompt = opts.query
+                if prompt == "" then
+                    return nil
+                end
             end
 
             local chars = {}
@@ -82,6 +92,63 @@ M.run_symbols_picker = function(opts)
     }):find()
 end
 
+M.run_definitions_picker = function(opts)
+    if vim.fn.executable "global" == 0 then
+        utils.notify("gtags", {
+            msg = "You need to install gtags and create a GTAGS file to use this picker",
+            level = "ERROR",
+        })
+        return
+    end
+
+    opts.bufnr = 0
+    -- set __inverted to use parse_without_col function in make_entry.lua
+    opts.__inverted = true
+
+    local query = vim.fn.expand(opts.query or "<cword>")
+    local handle = io.popen("global -t " .. query .. " --result=ctags")
+    local result = handle:read("*a")
+    handle:close()
+    local items = {}
+    for s in result:gmatch("[^\r\n]+") do
+        table.insert(items, s)
+    end
+
+    if #items == 1 and opts.jump_type ~= "never" then
+        local curr_filepath = vim.api.nvim_buf_get_name(opts.bufnr)
+        local item = items[1]
+        if curr_filepath ~= item.filename then
+            local cmd = "edit"
+            if opts.jump_type == "tab" then
+                cmd = "tabedit"
+            elseif opts.jump_type == "split" then
+                cmd = "new"
+            elseif opts.jump_type == "vsplit" then
+                cmd = "vnew"
+            elseif opts.jump_type == "tab drop" then
+                cmd = "tab drop"
+            end
+            if cmd then
+                vim.cmd(string.format("%s %s", cmd, item.filename))
+            end
+        end
+
+        vim.api.nvim_win_set_cursor(0, { item.lnum, 0 })
+    else
+        pickers.new(opts, {
+            prompt_title = "GTAGS Definitions",
+            previewer = previewers.ctags.new(opts),
+            finder = finders.new_table {
+                results = items,
+                entry_maker = opts.entry_maker or make_entry.gen_from_ctags(opts),
+            },
+            sorter = conf.generic_sorter({opts}),
+            push_cursor_on_edit = true,
+            push_tagstack_on_edit = true,
+        }):find()
+    end
+end
+
 M.run_references_picker = function(opts)
     local word
     local visual = vim.fn.mode() == "v"
@@ -96,14 +163,14 @@ M.run_references_picker = function(opts)
         word = vim.F.if_nil(opts.search, vim.fn.expand "<cword>")
     end
     local search = opts.use_regex and word or escape_chars(word)
-    
+
     local args = {
         "global",
         "-r",
         search,
         "--result=grep",
     }
-    
+
     -- set __inverted to use parse_without_col function in make_entry.lua
     opts.__inverted = true
     opts.entry_maker = opts.entry_maker or make_entry.gen_from_vimgrep(opts)
