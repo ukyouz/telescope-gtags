@@ -113,10 +113,12 @@ M.run_definitions_picker = function(opts)
     for s in result:gmatch("[^\r\n]+") do
         table.insert(items, s)
     end
+    
+    local entry_maker = opts.entry_maker or make_entry.gen_from_ctags(opts)
 
     if #items == 1 and opts.jump_type ~= "never" then
         local curr_filepath = vim.api.nvim_buf_get_name(opts.bufnr)
-        local item = items[1]
+        local item = entry_maker(items[1])
         if curr_filepath ~= item.filename then
             local cmd = "edit"
             if opts.jump_type == "tab" then
@@ -140,7 +142,7 @@ M.run_definitions_picker = function(opts)
             previewer = previewers.ctags.new(opts),
             finder = finders.new_table {
                 results = items,
-                entry_maker = opts.entry_maker or make_entry.gen_from_ctags(opts),
+                entry_maker = entry_maker,
             },
             sorter = conf.generic_sorter({opts}),
             push_cursor_on_edit = true,
