@@ -186,4 +186,41 @@ M.run_references_picker = function(opts)
     }):find()
 end
 
+M.run_symbol_usages_picker = function(opts)
+    local word
+    local visual = vim.fn.mode() == "v"
+
+    if visual == true then
+        local saved_reg = vim.fn.getreg "v"
+        vim.cmd [[noautocmd sil norm! "vy]]
+        local sele = vim.fn.getreg "v"
+        vim.fn.setreg("v", saved_reg)
+        word = vim.F.if_nil(opts.search, sele)
+    else
+        word = vim.F.if_nil(opts.search, vim.fn.expand "<cword>")
+    end
+    local search = opts.use_regex and word or escape_chars(word)
+
+    local args = {
+        "global",
+        "-s",
+        "-e",
+        search,
+        "--literal",
+        "--result=grep",
+    }
+
+    -- set __inverted to use parse_without_col function in make_entry.lua
+    opts.__inverted = true
+    opts.entry_maker = opts.entry_maker or make_entry.gen_from_vimgrep(opts)
+    pickers.new(opts, {
+        prompt_title = "GTAGS References",
+        finder = finders.new_oneshot_job(args, opts),
+        previewer = conf.grep_previewer(opts),
+        sorter = conf.generic_sorter({opts}),
+        push_cursor_on_edit = true,
+        push_tagstack_on_edit = true,
+    }):find()
+end
+
 return M
