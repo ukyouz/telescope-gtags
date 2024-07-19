@@ -92,6 +92,30 @@ M.run_symbols_picker = function(opts)
     }):find()
 end
 
+M.run_buffer_symbols_picker = function(opts)
+    local curernt_file = vim.api.nvim_buf_get_name(0)
+
+    local args = {
+        "global",
+        "-f",
+        curernt_file,
+        "--result=ctags",
+    }
+
+    opts.bufnr = 0
+    -- set __inverted to use parse_without_col function in make_entry.lua
+    opts.__inverted = true
+    opts.entry_maker = opts.entry_maker or make_entry.gen_from_ctags(opts)
+    pickers.new(opts, {
+        prompt_title = "GTAGS References",
+        finder = finders.new_oneshot_job(args, opts),
+        previewer = conf.grep_previewer(opts),
+        sorter = conf.generic_sorter({opts}),
+        push_cursor_on_edit = true,
+        push_tagstack_on_edit = true,
+    }):find()
+end
+
 M.run_definitions_picker = function(opts)
     if vim.fn.executable "global" == 0 then
         utils.notify("gtags", {
