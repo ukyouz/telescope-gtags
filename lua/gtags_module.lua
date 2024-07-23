@@ -3,10 +3,11 @@ local action_state = require "telescope.actions.state"
 local conf = require("telescope.config").values
 local entry_display = require "telescope.pickers.entry_display"
 local finders = require "telescope.finders"
-local make_entry = require "telescope.make_entry"
+local telescope_entry = require "telescope.make_entry"
 local pickers = require "telescope.pickers"
 local previewers = require "telescope.previewers"
 local utils = require "telescope.utils"
+local entry_maker = require "entry_maker"
 local flatten = utils.flatten
 
 local M = {}
@@ -59,7 +60,7 @@ M.run_symbols_picker = function(opts)
             -- print(vim.inspect(query))
 
             return { "global", "-t", "-i", query, "--result=ctags"}
-        end, opts.entry_maker or make_entry.gen_from_ctags(opts), opts.max_results, opts.cwd),
+        end, opts.entry_maker or telescope_entry.gen_from_ctags(opts), opts.max_results, opts.cwd),
         sorter = conf.generic_sorter({opts}),
         attach_mappings = function()
             action_set.select:enhance {
@@ -105,7 +106,7 @@ M.run_buffer_symbols_picker = function(opts)
     opts.bufnr = 0
     -- set __inverted to use parse_without_col function in make_entry.lua
     opts.__inverted = true
-    opts.entry_maker = opts.entry_maker or make_entry.gen_from_ctags(opts)
+    opts.entry_maker = opts.entry_maker or telescope_entry.gen_from_ctags(opts)
     pickers.new(opts, {
         prompt_title = "GTAGS Buffer Tags",
         finder = finders.new_oneshot_job(args, opts),
@@ -138,7 +139,7 @@ M.run_definitions_picker = function(opts)
         table.insert(items, s)
     end
 
-    local entry_maker = opts.entry_maker or make_entry.gen_from_ctags(opts)
+    local entry_maker = opts.entry_maker or telescope_entry.gen_from_ctags(opts)
 
     if #items == 1 and opts.jump_type ~= "never" then
         local curr_filepath = vim.api.nvim_buf_get_name(opts.bufnr)
@@ -200,9 +201,7 @@ M.run_references_picker = function(opts)
         "--result=grep",
     }
 
-    -- set __inverted to use parse_without_col function in make_entry.lua
-    opts.__inverted = true
-    opts.entry_maker = opts.entry_maker or make_entry.gen_from_vimgrep(opts)
+    opts.entry_maker = opts.entry_maker or entry_maker.gen_from_vimgrep(opts)
     pickers.new(opts, {
         prompt_title = "GTAGS References - " .. search,
         finder = finders.new_oneshot_job(args, opts),
@@ -225,9 +224,7 @@ M.run_symbol_usages_picker = function(opts)
         "--result=grep",
     }
 
-    -- set __inverted to use parse_without_col function in make_entry.lua
-    opts.__inverted = true
-    opts.entry_maker = opts.entry_maker or make_entry.gen_from_vimgrep(opts)
+    opts.entry_maker = opts.entry_maker or entry_maker.gen_from_vimgrep(opts)
     pickers.new(opts, {
         prompt_title = "GTAGS Symbol - " .. search,
         finder = finders.new_oneshot_job(args, opts),
@@ -249,9 +246,7 @@ M.run_grep_picker = function(opts)
         "--result=grep",
     }
 
-    -- set __inverted to use parse_without_col function in make_entry.lua
-    opts.__inverted = true
-    opts.entry_maker = opts.entry_maker or make_entry.gen_from_vimgrep(opts)
+    opts.entry_maker = opts.entry_maker or entry_maker.gen_from_vimgrep(opts)
     pickers.new(opts, {
         prompt_title = "Global Grep - " .. search,
         finder = finders.new_oneshot_job(args, opts),
