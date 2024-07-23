@@ -107,7 +107,7 @@ M.run_buffer_symbols_picker = function(opts)
     opts.__inverted = true
     opts.entry_maker = opts.entry_maker or make_entry.gen_from_ctags(opts)
     pickers.new(opts, {
-        prompt_title = "GTAGS References",
+        prompt_title = "GTAGS Buffer Tags",
         finder = finders.new_oneshot_job(args, opts),
         previewer = conf.grep_previewer(opts),
         sorter = conf.generic_sorter({opts}),
@@ -162,7 +162,7 @@ M.run_definitions_picker = function(opts)
         vim.api.nvim_win_set_cursor(0, { item.lnum, 0 })
     else
         pickers.new(opts, {
-            prompt_title = "GTAGS Definitions",
+            prompt_title = "GTAGS Definitions - " .. query,
             previewer = previewers.ctags.new(opts),
             finder = finders.new_table {
                 results = items,
@@ -204,7 +204,7 @@ M.run_references_picker = function(opts)
     opts.__inverted = true
     opts.entry_maker = opts.entry_maker or make_entry.gen_from_vimgrep(opts)
     pickers.new(opts, {
-        prompt_title = "GTAGS References",
+        prompt_title = "GTAGS References - " .. search,
         finder = finders.new_oneshot_job(args, opts),
         previewer = conf.grep_previewer(opts),
         sorter = conf.generic_sorter({opts}),
@@ -229,7 +229,7 @@ M.run_symbol_usages_picker = function(opts)
     opts.__inverted = true
     opts.entry_maker = opts.entry_maker or make_entry.gen_from_vimgrep(opts)
     pickers.new(opts, {
-        prompt_title = "GTAGS References",
+        prompt_title = "GTAGS Symbol - " .. search,
         finder = finders.new_oneshot_job(args, opts),
         previewer = conf.grep_previewer(opts),
         sorter = conf.generic_sorter({opts}),
@@ -253,7 +253,7 @@ M.run_grep_picker = function(opts)
     opts.__inverted = true
     opts.entry_maker = opts.entry_maker or make_entry.gen_from_vimgrep(opts)
     pickers.new(opts, {
-        prompt_title = "Global Grep",
+        prompt_title = "Global Grep - " .. search,
         finder = finders.new_oneshot_job(args, opts),
         previewer = conf.grep_previewer(opts),
         sorter = conf.generic_sorter({opts}),
