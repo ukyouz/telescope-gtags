@@ -110,7 +110,10 @@ do
           )
   
           if hl_group then
-            local style = { { { 0, #icon }, hl_group } }
+            local style = {
+              { { 0, #icon + #display_filename + 1 }, hl_group },
+              { { #icon + #display_filename + 2, #icon + #display_filename + #coordinates }, "Number" },
+            }
             style = utils.merge_styles(style, path_style, #icon + 1)
             return display, style
           else
