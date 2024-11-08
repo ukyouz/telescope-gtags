@@ -9,8 +9,8 @@ local previewers = require "telescope.previewers"
 local utils = require "telescope.utils"
 local entry_maker = require "entry_maker"
 local flatten = utils.flatten
+local hash = require "hash"
 
-local M = {}
 
 local escape_chars = function(string)
     return string.gsub(string, "[%(|%)|\\|%[|%]|%-|%{%}|%?|%+|%*|%^|%$|%.]", {
@@ -31,6 +31,45 @@ local escape_chars = function(string)
     })
 end
 
+local M = {}
+
+local get_dbpath = function()
+    local pwd = vim.fn.getcwd()
+    local path, path_style = utils.transform_path(
+        {
+            path_display = {'absolute', 'shorten'}
+        },
+        pwd
+    )
+    local sha = string.sub(hash.sha1(path), 0, 8)
+    return pwd, path:gsub("\\", "-"):gsub("/", "-") .. '-' .. sha
+end
+
+local OPTS = {
+    storeInProjectFolder = true,
+    dbPath = vim.fn.stdpath('data') .. '/gtags/',
+}
+
+M.setup = function(opts)
+    for k, v in pairs(opts) do
+        OPTS[k] = v
+    end
+    -- print(vim.inspect(OPTS))
+end
+
+
+M.setup_env = function()
+    local pwd, folder = get_dbpath()
+    if vim.F.if_nil(OPTS.storeInProjectFolder) then
+        return pwd, pwd
+    end
+    -- print(OPTS.dbPath .. folder)
+    vim.env.GTAGSROOT = pwd
+    vim.env.GTAGSDBPATH = OPTS.dbPath .. folder
+    return pwd, OPTS.dbPath .. folder
+end
+
+
 -- our picker function: colors
 M.run_symbols_picker = function(opts)
     if vim.fn.executable "global" == 0 then
@@ -40,6 +79,8 @@ M.run_symbols_picker = function(opts)
         })
         return
     end
+    M.setup_env(opts)
+
     opts.bufnr = 0
 
     pickers.new(opts, {
@@ -48,7 +89,7 @@ M.run_symbols_picker = function(opts)
         finder = finders.new_job(function(prompt)
             if not prompt or prompt == "" then
                 prompt = opts.query
-                if prompt == "" then
+                if prompt == "" or prompt == nil then
                     return nil
                 end
             end
