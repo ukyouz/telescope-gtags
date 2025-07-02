@@ -54,7 +54,7 @@ do
       local idx = 1
       local hidden = utils.is_path_hidden(opts)
       if not hidden then
-        table.insert(display_items, idx, { width = vim.F.if_nil(opts.fname_width, 30) })
+        table.insert(display_items, idx, {})
         idx = idx + 1
       end
     
@@ -63,7 +63,7 @@ do
       end
     
       local displayer = entry_display.create {
-        separator = " │ ",
+        separator = " - ",
         items = display_items,
       }
     
@@ -82,14 +82,14 @@ do
           }
         else
           return displayer {
+            entry.tag,
             {
               display_path,
               function()
                 return path_style
               end,
             },
-            entry.tag,
-    
+
             scode,
           }
         end

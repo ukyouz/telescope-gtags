@@ -82,6 +82,7 @@ M.run_symbols_picker = function(opts)
     M.setup_env(opts)
 
     opts.bufnr = 0
+    opts.only_sort_tags = true
 
     pickers.new(opts, {
         prompt_title = "GTAGS Symbols",
@@ -144,6 +145,7 @@ M.run_buffer_symbols_picker = function(opts)
         "--result=ctags",
     }
 
+    opts.only_sort_tags = true
     opts.bufnr = 0
     -- set __inverted to use parse_without_col function in make_entry.lua
     opts.__inverted = true
@@ -203,6 +205,7 @@ M.run_definitions_picker = function(opts)
 
         vim.api.nvim_win_set_cursor(0, { item.lnum, 0 })
     else
+        opts.only_sort_tags = true
         pickers.new(opts, {
             prompt_title = "GTAGS Definitions - " .. query,
             previewer = previewers.ctags.new(opts),
