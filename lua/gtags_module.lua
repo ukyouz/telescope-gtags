@@ -9,6 +9,7 @@ local utils = require "telescope.utils"
 local entry_maker = require "entry_maker"
 local flatten = utils.flatten
 local hash = require "hash"
+local pathutil = require "pathutil"
 
 
 local escape_chars = function(string)
@@ -63,9 +64,9 @@ M.setup_env = function()
         return pwd, pwd
     end
     -- print(OPTS.dbPath .. folder)
-    vim.env.GTAGSROOT = pwd
-    vim.env.GTAGSDBPATH = OPTS.dbPath .. folder
-    return pwd, OPTS.dbPath .. folder
+    vim.fn.setenv("GTAGSROOT", pwd)
+    vim.fn.setenv("GTAGSDBPATH", pathutil.join(OPTS.dbPath, folder))
+    return pwd, pathutil.join(OPTS.dbPath, folder)
 end
 
 
