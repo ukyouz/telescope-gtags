@@ -47,7 +47,6 @@ do
       local current_file = Path:new(vim.api.nvim_buf_get_name(opts.bufnr)):normalize(cwd)
     
       local display_items = {
-    
         { remaining = true },
       }
     
@@ -57,11 +56,7 @@ do
         table.insert(display_items, idx, {})
         idx = idx + 1
       end
-    
-      if opts.show_line then
-        table.insert(display_items, idx, { width = 30 })
-      end
-    
+
       local displayer = entry_display.create {
         separator = " - ",
         items = display_items,
@@ -69,29 +64,27 @@ do
     
       local make_display = function(entry)
         local display_path, path_style = utils.transform_path(opts, entry.filename)
-    
-        local scode
-        if opts.show_line then
-          scode = entry.scode
+        local dp, hl_group, icon = utils.transform_devicons(entry.filename, display_path, false)
+        if hl_group then
+           local default_style = {
+              { { 0, #icon + #entry.filename }, hl_group },
+            }
+           path_style = utils.merge_styles(default_style, path_style, #icon + 1)
         end
-    
+
+        local display_style = {
+          { { 0, #entry.tag }, "" },
+          { { #entry.tag, #entry.tag + 3 }, "Comment" },
+        }
         if hidden then
           return displayer {
             entry.tag,
-            scode,
           }
         else
           return displayer {
             entry.tag,
-            {
-              display_path,
-              function()
-                return path_style
-              end,
-            },
-
-            scode,
-          }
+            dp,
+          }, utils.merge_styles(display_style, path_style, #entry.tag + 3)
         end
       end
     
