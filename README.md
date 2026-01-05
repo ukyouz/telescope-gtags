@@ -16,6 +16,7 @@ Telescope.nvim extension for global tag support
     config = function()
         require('telescope').load_extension('gtags')
     end,
+    -- ...optional configs, see below
 },
 ```
 
@@ -23,7 +24,6 @@ Telescope.nvim extension for global tag support
 
 ```lua
 {
-    "ukyouz/telescope-gtags",
     -- ...
     keys = {
         {
@@ -76,4 +76,58 @@ Telescope.nvim extension for global tag support
     },
     -- ...
 },
+```
+
+#### Store gtags db separately
+
+The plugin default run gtags command under project root folder, thus gtags databases also stored under same directory. However, if you want to collect those db files in other directory, you can disable `storeInProjectFolder` options and set any `dbPath` directory as you want.
+
+You need to make the db folder and move the db files by youself after db generation, see the following example.
+
+```lua
+{
+    -- ...
+    opts = {
+        storeInProjectFolder = false,  -- default is true
+        dbPath = vim.fn.stdpath("data") .. "/gtags",  -- default value
+    },
+    keys = {
+        {
+            -- ...
+            "<S-F5>", function()
+                local pwd, dbpath = require('telescope-gtags').setup_env()
+                local cmd = "git ls-files --recurse-submodules | gtags --incremental --file -"
+                -- `-p` only works on linux
+                os.execute("mkdir -p " .. dbpath)
+                print(vim.fn.printf("running [%s]...", cmd))
+                vim.fn.jobstart(
+                    cmd,
+                    {
+                        on_exit = function(jobid, exit_code, evt_type)
+                            os.remove(dbpath .. "/GPATH")
+                            os.remove(dbpath .. "/GRTAGS")
+                            os.remove(dbpath .. "/GTAGS")
+                            if exit_code == 0 then
+                                print(vim.fn.printf("[%s] done.", cmd))
+                                os.rename("GPATH", dbpath .."/GPATH")
+                                os.rename("GRTAGS", dbpath .."/GRTAGS")
+                                os.rename("GTAGS", dbpath .."/GTAGS")
+                            else
+                                print(vim.fn.printf("[%s] Error %d! Tag files are removed.", cmd, exit_code))
+                            end
+                        end,
+                        on_stdout = function(cid, data, name)
+                            print(data[1])
+                        end,
+                        on_stderr = function(cid, data, name)
+                            if data[1] ~= "" then
+                                print("Error:" .. data[1])
+                            end
+                        end,
+                    }
+                )
+            end,
+        },
+    },
+}
 ```
